@@ -170,13 +170,10 @@ func (p *restrictedProfile) Apply(pod *corev1.Pod, containerName string, target 
 	dropCapabilities(pod, containerName)
 
 	switch style {
-	case node:
-		clearSecurityContext(pod, containerName)
-
 	case podCopy:
 		shareProcessNamespace(pod)
 
-	case ephemeral:
+	case ephemeral, node:
 		// no additional modifications needed
 	}
 
@@ -240,13 +237,19 @@ func clearSecurityContext(p *corev1.Pod, containerName string) {
 }
 
 // disallowRoot configures the container to run as a non-root user.
+// If the container is already configured to run as a non-0 UID, that will be
+// retained; otherwise the UID will be updated to 65534.
 func disallowRoot(p *corev1.Pod, containerName string) {
 	podutils.VisitContainers(&p.Spec, podutils.AllContainers, func(c *corev1.Container, _ podutils.ContainerType) bool {
 		if c.Name != containerName {
 			return true
 		}
-		c.SecurityContext = &corev1.SecurityContext{
-			RunAsNonRoot: pointer.BoolPtr(true),
+		if c.SecurityContext == nil {
+			c.SecurityContext = &corev1.SecurityContext{}
+		}
+		c.SecurityContext.RunAsNonRoot = pointer.BoolPtr(true)
+		if c.SecurityContext.RunAsUser == nil || *c.SecurityContext.RunAsUser == 0 {
+			c.SecurityContext.RunAsUser = pointer.Int64(65534)
 		}
 		return false
 	})
@@ -261,9 +264,11 @@ func dropCapabilities(p *corev1.Pod, containerName string) {
 		if c.SecurityContext == nil {
 			c.SecurityContext = &corev1.SecurityContext{}
 		}
-		c.SecurityContext.Capabilities = &corev1.Capabilities{
-			Drop: []corev1.Capability{"ALL"},
+		if c.SecurityContext.Capabilities == nil {
+			c.SecurityContext.Capabilities = &corev1.Capabilities{}
 		}
+		c.SecurityContext.Capabilities.Drop = []corev1.Capability{"ALL"}
+		c.SecurityContext.Capabilities.Add = nil
 		return false
 	})
 }

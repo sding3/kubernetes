@@ -342,6 +342,7 @@ func TestRestrictedProfile(t *testing.T) {
 							Name: "dbg", Image: "dbgimage",
 							SecurityContext: &corev1.SecurityContext{
 								RunAsNonRoot: pointer.Bool(true),
+								RunAsUser:    pointer.Int64(65534),
 								Capabilities: &corev1.Capabilities{
 									Drop: []corev1.Capability{"ALL"},
 								},
@@ -381,6 +382,7 @@ func TestRestrictedProfile(t *testing.T) {
 							Image: "dbgimage",
 							SecurityContext: &corev1.SecurityContext{
 								RunAsNonRoot: pointer.Bool(true),
+								RunAsUser:    pointer.Int64(65534),
 								Capabilities: &corev1.Capabilities{
 									Drop: []corev1.Capability{"ALL"},
 								},
@@ -408,6 +410,13 @@ func TestRestrictedProfile(t *testing.T) {
 						{
 							Name:  "dbg",
 							Image: "dbgimage",
+							SecurityContext: &corev1.SecurityContext{
+								RunAsNonRoot: pointer.Bool(true),
+								RunAsUser:    pointer.Int64(65534),
+								Capabilities: &corev1.Capabilities{
+									Drop: []corev1.Capability{"ALL"},
+								},
+							},
 						},
 					},
 				},
